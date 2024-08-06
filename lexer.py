@@ -8,6 +8,7 @@ def lex(code):
     line_num = 0
     line_start = 0
     errors = []
+    next_token_is_function = False
 
     for mo in token_regex.finditer(code):
         kind = mo.lastgroup
@@ -18,15 +19,16 @@ def lex(code):
         if kind == 'SKIP':
             continue
         elif kind == 'MISMATCH':
-            error_msg = f'Erro: Charactere inesperado {value!r} na posicao {line_num},{column}'
-            errors.append(error_msg)
-            continue 
-
-        if kind in ['IDENTIFIER', 'NUMBER']:
+            errors.append(f'Erro: Charactere inesperado {value!r} na posicao {line_num},{column}')
+            continue
+        
+        if kind == 'IDENTIFIER':
             if value not in symbol_table:
-                symbol_table[value] = symbol_index
+                symbol_table[value] = {"index": symbol_index, "type": "variable", "line_declared": line_num}
                 symbol_index += 1
-            identificacao = f'{kind.lower()}, {symbol_table[value]}'
+            if next_token_is_function:
+                symbol_table[value]["type"] = "function"
+            identificacao = f'identifier, {symbol_table[value]["index"]} ({symbol_table[value]["type"]})'
         else:
             identificacao = kind.lower()
 
@@ -36,6 +38,8 @@ def lex(code):
             "tamanho": length,
             "posicao": [line_num, column]
         })
+
+        next_token_is_function = (value == '(') 
 
         if '\n' in value:
             line_num += value.count('\n')
